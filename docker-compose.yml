@@ -10,6 +10,8 @@ services:
 
     volumes:
       - ${HOST_DIR:-.}:/workspace
+      - ./AGENTS.md:/workspace/AGENTS.md:ro
+      - ./.aider.conf.yml:/workspace/.aider.conf.yml:ro
       - ${USERPROFILE}/.gitconfig:/app/.gitconfig:ro
     
     working_dir: /workspace
