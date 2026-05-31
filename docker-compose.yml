@@ -1,0 +1,21 @@
+services:
+  aider:
+    image: paulgauthier/aider
+
+    tmpfs:
+      - /tmp
+
+    security_opt:
+      - no-new-privileges:true
+
+    volumes:
+      - ${HOST_DIR:-.}:/workspace
+      - ${USERPROFILE}/.gitconfig:/app/.gitconfig:ro
+    
+    working_dir: /workspace
+
+    stdin_open: true
+    tty: true
+
+    environment:
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
