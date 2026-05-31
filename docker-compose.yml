@@ -9,12 +9,12 @@ services:
       - no-new-privileges:true
 
     volumes:
-      - ${HOST_DIR:-.}:/workspace
-      - ./AGENTS.md:/workspace/AGENTS.md:ro
-      - ./.aider.conf.yml:/workspace/.aider.conf.yml:ro
+      - ${HOST_DIR:-.}:/project
+      - ./AGENTS.md:/config/AGENTS.md:ro
+      - ./.aider.conf.yml:/config/.aider.conf.yml:ro
       - ${USERPROFILE}/.gitconfig:/app/.gitconfig:ro
     
-    working_dir: /workspace
+    working_dir: /project
 
     stdin_open: true
     tty: true
