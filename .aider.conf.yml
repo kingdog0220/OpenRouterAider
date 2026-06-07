@@ -1,3 +1,10 @@
+weak-model: openrouter/anthropic/claude-3.5-haiku
+editor-model: openrouter/qwen/qwen3-next-80b-a3b-instruct:free
+edit-format: architect
+cache-prompts: true
+stream: true
+auto-commits: true
+dirty-commits: false
 read:
   - /config/AGENTS.md
   - PROJECT_RULES.md
