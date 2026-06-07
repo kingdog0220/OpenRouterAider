@@ -3,7 +3,7 @@ editor-model: openrouter/qwen/qwen3-next-80b-a3b-instruct:free
 edit-format: architect
 cache-prompts: true
 stream: true
-auto-commits: true
+auto-commits: false
 dirty-commits: false
 read:
   - /config/AGENTS.md
