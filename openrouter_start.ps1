@@ -20,15 +20,39 @@ if (Test-Path $envFile) {
     }
 }
 
+# Function to fetch models from OpenRouter API
+function Get-OpenRouterModels {
+    try {
+        $response = Invoke-RestMethod -Uri "https://openrouter.ai/api/v1/models" -Method GET
+        # Ensure response.data exists and is not null
+        if ($null -eq $response -or $null -eq $response.data) {
+            Write-Host "Invalid API response format" -ForegroundColor Yellow
+            return @("openrouter/openrouter/free")  # Return default model
+        }
+        # Convert to array and ensure it's a string array
+        $models = @($response.data | ForEach-Object { "openrouter/$($_.id)" })
+        # If no models found, return default
+        if ($models.Count -eq 0) {
+            Write-Host "No models found in API response" -ForegroundColor Yellow
+            return @("openrouter/openrouter/free")
+        }
+        return $models
+    }
+    catch {
+        Write-Host "Failed to fetch models from OpenRouter API: $_" -ForegroundColor Red
+        return @("openrouter/openrouter/free")  # Default model if API fails
+    }
+}
+
 # Show input dialog with current value as default
 $form = New-Object System.Windows.Forms.Form
 $form.Text = "OpenRouter Configuration"
 $form.Width = 500
-$form.Height = 180
+$form.Height = 240
 $form.StartPosition = "CenterScreen"
 $form.TopMost = $true
 
-# Label
+# Label for HOST_DIR
 $label = New-Object System.Windows.Forms.Label
 $label.Text = "HOST_DIR:"
 $label.Left = 20
@@ -36,7 +60,7 @@ $label.Top = 20
 $label.Width = 100
 $form.Controls.Add($label)
 
-# TextBox
+# TextBox for HOST_DIR
 $textbox = New-Object System.Windows.Forms.TextBox
 $textbox.Left = 20
 $textbox.Top = 50
@@ -60,11 +84,38 @@ $browseButton.Add_Click({
 })
 $form.Controls.Add($browseButton)
 
+# Label for Model
+$modelLabel = New-Object System.Windows.Forms.Label
+$modelLabel.Text = "Model:"
+$modelLabel.Left = 20
+$modelLabel.Top = 90
+$modelLabel.Width = 100
+$form.Controls.Add($modelLabel)
+
+# ComboBox for Model selection
+$modelComboBox = New-Object System.Windows.Forms.ComboBox
+$modelComboBox.Left = 20
+$modelComboBox.Top = 120
+$modelComboBox.Width = 450
+$modelComboBox.DropDownStyle = [System.Windows.Forms.ComboBoxStyle]::DropDownList
+$form.Controls.Add($modelComboBox)
+
+# Populate models
+$models = Get-OpenRouterModels
+$modelComboBox.Items.AddRange($models)
+if ($models.Count -gt 0) {
+    $modelComboBox.SelectedIndex = 0
+} else {
+    # Add default model if no models available
+    $modelComboBox.Items.Add("openrouter/openrouter/free")
+    $modelComboBox.SelectedIndex = 0
+}
+
 # OK Button
 $okButton = New-Object System.Windows.Forms.Button
 $okButton.Text = "OK"
 $okButton.Left = 310
-$okButton.Top = 100
+$okButton.Top = 160
 $okButton.Width = 75
 $okButton.DialogResult = [System.Windows.Forms.DialogResult]::OK
 $form.AcceptButton = $okButton
@@ -74,7 +125,7 @@ $form.Controls.Add($okButton)
 $cancelButton = New-Object System.Windows.Forms.Button
 $cancelButton.Text = "Cancel"
 $cancelButton.Left = 400
-$cancelButton.Top = 100
+$cancelButton.Top = 160
 $cancelButton.Width = 75
 $cancelButton.DialogResult = [System.Windows.Forms.DialogResult]::Cancel
 $form.CancelButton = $cancelButton
@@ -85,22 +136,27 @@ $result = $form.ShowDialog()
 
 if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
     $newHostDir = $textbox.Text
+    $selectedModel = $modelComboBox.SelectedItem
+
+    # Ensure selected model is not null
+    if ($null -eq $selectedModel) {
+        $selectedModel = "openrouter/openrouter/free"
+        Write-Host "No model selected, using default: $selectedModel" -ForegroundColor Yellow
+    }
 
     if (-not (Test-Path $newHostDir)) {
-    Write-Host "Directory not found: $newHostDir" -ForegroundColor Red
-    exit 1
+        Write-Host "Directory not found: $newHostDir" -ForegroundColor Red
+        exit 1
     }
 
     $projectRulesPath = Join-Path $newHostDir "PROJECT_RULES.md"
     $projectRulesTemplate = Join-Path $rootDir "PROJECT_RULES.md"
 
     if (-not (Test-Path $projectRulesPath)) {
-
         Write-Host "Copying PROJECT_RULES.md..." -ForegroundColor Cyan
-
         Copy-Item `
-        -Path $projectRulesTemplate `
-        -Destination $projectRulesPath
+            -Path $projectRulesTemplate `
+            -Destination $projectRulesPath
     }
     
     # Update .env file if value changed
@@ -121,7 +177,7 @@ if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
     
     Write-Host "`nContainer started successfully" -ForegroundColor Green
     Write-Host "Entering container..." -ForegroundColor Cyan
-    docker compose run --rm aider --config /config/.aider.conf.yml --model openrouter/openrouter/free
+    docker compose run --rm aider --config /config/.aider.conf.yml --model $selectedModel
 } else {
     Write-Host "Operation cancelled" -ForegroundColor Yellow
 }
