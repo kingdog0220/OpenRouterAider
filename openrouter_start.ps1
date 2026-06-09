@@ -24,7 +24,19 @@ if (Test-Path $envFile) {
 function Get-OpenRouterModels {
     try {
         $response = Invoke-RestMethod -Uri "https://openrouter.ai/api/v1/models" -Method GET
-        return $response.data | ForEach-Object { $_.id }
+        # Ensure response.data exists and is not null
+        if ($null -eq $response -or $null -eq $response.data) {
+            Write-Host "Invalid API response format" -ForegroundColor Yellow
+            return @("openrouter/openrouter/free")  # Return default model
+        }
+        # Convert to array and ensure it's a string array
+        $models = @($response.data | ForEach-Object { $_.id })
+        # If no models found, return default
+        if ($models.Count -eq 0) {
+            Write-Host "No models found in API response" -ForegroundColor Yellow
+            return @("openrouter/openrouter/free")
+        }
+        return $models
     }
     catch {
         Write-Host "Failed to fetch models from OpenRouter API: $_" -ForegroundColor Red
@@ -93,6 +105,10 @@ $models = Get-OpenRouterModels
 $modelComboBox.Items.AddRange($models)
 if ($models.Count -gt 0) {
     $modelComboBox.SelectedIndex = 0
+} else {
+    # Add default model if no models available
+    $modelComboBox.Items.Add("openrouter/openrouter/free")
+    $modelComboBox.SelectedIndex = 0
 }
 
 # OK Button
@@ -121,6 +137,12 @@ $result = $form.ShowDialog()
 if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
     $newHostDir = $textbox.Text
     $selectedModel = $modelComboBox.SelectedItem
+
+    # Ensure selected model is not null
+    if ($null -eq $selectedModel) {
+        $selectedModel = "openrouter/openrouter/free"
+        Write-Host "No model selected, using default: $selectedModel" -ForegroundColor Yellow
+    }
 
     if (-not (Test-Path $newHostDir)) {
         Write-Host "Directory not found: $newHostDir" -ForegroundColor Red
