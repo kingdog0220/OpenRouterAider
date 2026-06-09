@@ -30,7 +30,7 @@ function Get-OpenRouterModels {
             return @("openrouter/openrouter/free")  # Return default model
         }
         # Convert to array and ensure it's a string array
-        $models = @($response.data | ForEach-Object { $_.id })
+        $models = @($response.data | ForEach-Object { "openrouter/$($_.id)" })
         # If no models found, return default
         if ($models.Count -eq 0) {
             Write-Host "No models found in API response" -ForegroundColor Yellow
