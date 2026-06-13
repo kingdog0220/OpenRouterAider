@@ -1,7 +1,7 @@
 # OpenRouter + Aider container rebuild and enter
 # Usage: .\openrouter_start.ps1
 
-cd D:\src\Container\openrouter
+Set-Location D:\src\Container\openrouter
 
 # Add Windows Forms assembly for InputBox dialog
 [void][System.Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms")
