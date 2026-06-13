@@ -1,5 +1,7 @@
 # OpenRouter + Aider container rebuild and enter
 # Usage: .\openrouter_start.ps1
+$LogFile = "D:\src\Container\openrouter\openrouter_start.log"
+Start-Transcript -Path $LogFile -Append
 
 Set-Location D:\src\Container\openrouter
 
@@ -181,3 +183,5 @@ if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
 } else {
     Write-Host "Operation cancelled" -ForegroundColor Yellow
 }
+
+Stop-Transcript
