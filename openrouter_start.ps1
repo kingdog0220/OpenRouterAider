@@ -29,20 +29,20 @@ function Get-OpenRouterModels {
         # Ensure response.data exists and is not null
         if ($null -eq $response -or $null -eq $response.data) {
             Write-Host "Invalid API response format" -ForegroundColor Yellow
-            return @("openrouter/openrouter/free")  # Return default model
+            return @("openrouter/free")  # Return default model
         }
         # Convert to array and ensure it's a string array
-        $models = @($response.data | ForEach-Object { "openrouter/$($_.id)" })
+        $models = @($response.data | ForEach-Object { $_.id })
         # If no models found, return default
         if ($models.Count -eq 0) {
             Write-Host "No models found in API response" -ForegroundColor Yellow
-            return @("openrouter/openrouter/free")
+            return @("openrouter/free")
         }
         return $models
     }
     catch {
         Write-Host "Failed to fetch models from OpenRouter API: $_" -ForegroundColor Red
-        return @("openrouter/openrouter/free")  # Default model if API fails
+        return @("openrouter/free")  # Default model if API fails
     }
 }
 
@@ -109,7 +109,7 @@ if ($models.Count -gt 0) {
     $modelComboBox.SelectedIndex = 0
 } else {
     # Add default model if no models available
-    $modelComboBox.Items.Add("openrouter/openrouter/free")
+    $modelComboBox.Items.Add("openrouter/free")
     $modelComboBox.SelectedIndex = 0
 }
 
@@ -142,7 +142,7 @@ if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
 
     # Ensure selected model is not null
     if ($null -eq $selectedModel) {
-        $selectedModel = "openrouter/openrouter/free"
+        $selectedModel = "openrouter/free"
         Write-Host "No model selected, using default: $selectedModel" -ForegroundColor Yellow
     }
 
@@ -179,7 +179,7 @@ if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
     
     Write-Host "`nContainer started successfully" -ForegroundColor Green
     Write-Host "Entering container..." -ForegroundColor Cyan
-    docker compose run --rm aider --config /config/.aider.conf.yml --model $selectedModel
+    docker compose run --rm aider --config /config/.aider.conf.yml --model "openrouter/$selectedModel"
 } else {
     Write-Host "Operation cancelled" -ForegroundColor Yellow
 }
