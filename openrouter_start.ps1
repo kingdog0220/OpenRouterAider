@@ -39,6 +39,7 @@ function Get-OpenRouterModels {
                 $_.architecture.output_modalities -and
                 ($_.architecture.output_modalities -contains "text")
             } |
+            Sort-Object id |
             ForEach-Object { $_.id }
         )
         # If no models found, return default
