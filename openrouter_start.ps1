@@ -31,8 +31,16 @@ function Get-OpenRouterModels {
             Write-Host "Invalid API response format" -ForegroundColor Yellow
             return @("openrouter/free")  # Return default model
         }
-        # Convert to array and ensure it's a string array
-        $models = @($response.data | ForEach-Object { $_.id })
+        # Filter to models usable for inference (text output capable)
+        $models = @(
+            $response.data |
+            Where-Object {
+                $_.architecture -and
+                $_.architecture.output_modalities -and
+                ($_.architecture.output_modalities -contains "text")
+            } |
+            ForEach-Object { $_.id }
+        )
         # If no models found, return default
         if ($models.Count -eq 0) {
             Write-Host "No models found in API response" -ForegroundColor Yellow
