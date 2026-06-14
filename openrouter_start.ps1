@@ -1,9 +1,12 @@
 # OpenRouter + Aider container rebuild and enter
 # Usage: .\openrouter_start.ps1
 $LogFile = "D:\src\Container\openrouter\openrouter_start.log"
-Start-Transcript -Path $LogFile -Append
+$transcriptStarted = $false
+try {
+    Start-Transcript -Path $LogFile -Append
+    $transcriptStarted = $true
 
-Set-Location D:\src\Container\openrouter
+    Set-Location D:\src\Container\openrouter
 
 # Add Windows Forms assembly for InputBox dialog
 [void][System.Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms")
@@ -156,8 +159,9 @@ if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
     }
 
     if (-not (Test-Path $newHostDir)) {
-        Write-Host "Directory not found: $newHostDir" -ForegroundColor Red
-        exit 1
+        $message = "Directory not found: $newHostDir"
+        Write-Host $message -ForegroundColor Red
+        throw $message
     }
 
     $projectRulesPath = Join-Path $newHostDir "PROJECT_RULES.md"
@@ -193,4 +197,8 @@ if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
     Write-Host "Operation cancelled" -ForegroundColor Yellow
 }
 
-Stop-Transcript
+} finally {
+    if ($transcriptStarted) {
+        Stop-Transcript
+    }
+}
