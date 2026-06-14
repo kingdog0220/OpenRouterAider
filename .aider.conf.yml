@@ -1,5 +1,5 @@
-weak-model: openrouter/qwen/qwen3-next-80b-a3b-instruct:free
-editor-model: openrouter/qwen/qwen3-next-80b-a3b-instruct:free
+weak-model: openrouter/anthropic/claude-3-haiku
+editor-model: openrouter/deepseek/deepseek-chat
 edit-format: architect
 cache-prompts: true
 stream: true
