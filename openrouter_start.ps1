@@ -1,12 +1,17 @@
 # OpenRouter + Aider container rebuild and enter
 # Usage: .\openrouter_start.ps1
-$LogFile = "D:\src\Container\openrouter\openrouter_start.log"
+$rootDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$LogFile = if ($env:OPENROUTER_START_LOG) {
+    $env:OPENROUTER_START_LOG
+} else {
+    Join-Path -Path $rootDir -ChildPath "openrouter_start.log"
+}
 $transcriptStarted = $false
 try {
     Start-Transcript -Path $LogFile -Append
     $transcriptStarted = $true
 
-    Set-Location D:\src\Container\openrouter
+    Set-Location -Path $rootDir
 
 # Add Windows Forms assembly for InputBox dialog
 [void][System.Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms")
@@ -14,8 +19,7 @@ try {
 
 # Get current HOST_DIR from .env file
 $envFile = ".\.env"
-$currentHostDir = "D:/src/Container/openrouter"
-$rootDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$currentHostDir = $rootDir
 
 if (Test-Path $envFile) {
     $envContent = Get-Content $envFile
