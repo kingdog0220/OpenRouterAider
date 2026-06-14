@@ -1,7 +1,17 @@
 # OpenRouter + Aider container rebuild and enter
 # Usage: .\openrouter_start.ps1
+$rootDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$LogFile = if ($env:OPENROUTER_START_LOG) {
+    $env:OPENROUTER_START_LOG
+} else {
+    Join-Path -Path $rootDir -ChildPath "openrouter_start.log"
+}
+$transcriptStarted = $false
+try {
+    Start-Transcript -Path $LogFile -Append
+    $transcriptStarted = $true
 
-cd D:\src\Container\openrouter
+    Set-Location -Path $rootDir
 
 # Add Windows Forms assembly for InputBox dialog
 [void][System.Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms")
@@ -9,8 +19,7 @@ cd D:\src\Container\openrouter
 
 # Get current HOST_DIR from .env file
 $envFile = ".\.env"
-$currentHostDir = "D:/src/Container/openrouter"
-$rootDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$currentHostDir = $rootDir
 
 if (Test-Path $envFile) {
     $envContent = Get-Content $envFile
@@ -27,20 +36,29 @@ function Get-OpenRouterModels {
         # Ensure response.data exists and is not null
         if ($null -eq $response -or $null -eq $response.data) {
             Write-Host "Invalid API response format" -ForegroundColor Yellow
-            return @("openrouter/openrouter/free")  # Return default model
+            return @("openrouter/free")  # Return default model
         }
-        # Convert to array and ensure it's a string array
-        $models = @($response.data | ForEach-Object { "openrouter/$($_.id)" })
+        # Filter to models usable for inference (text output capable)
+        $models = @(
+            $response.data |
+            Where-Object {
+                $_.architecture -and
+                $_.architecture.output_modalities -and
+                ($_.architecture.output_modalities -contains "text")
+            } |
+            Sort-Object id |
+            ForEach-Object { $_.id }
+        )
         # If no models found, return default
         if ($models.Count -eq 0) {
             Write-Host "No models found in API response" -ForegroundColor Yellow
-            return @("openrouter/openrouter/free")
+            return @("openrouter/free")
         }
         return $models
     }
     catch {
         Write-Host "Failed to fetch models from OpenRouter API: $_" -ForegroundColor Red
-        return @("openrouter/openrouter/free")  # Default model if API fails
+        return @("openrouter/free")  # Default model if API fails
     }
 }
 
@@ -107,7 +125,7 @@ if ($models.Count -gt 0) {
     $modelComboBox.SelectedIndex = 0
 } else {
     # Add default model if no models available
-    $modelComboBox.Items.Add("openrouter/openrouter/free")
+    $modelComboBox.Items.Add("openrouter/free")
     $modelComboBox.SelectedIndex = 0
 }
 
@@ -140,13 +158,14 @@ if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
 
     # Ensure selected model is not null
     if ($null -eq $selectedModel) {
-        $selectedModel = "openrouter/openrouter/free"
+        $selectedModel = "openrouter/free"
         Write-Host "No model selected, using default: $selectedModel" -ForegroundColor Yellow
     }
 
     if (-not (Test-Path $newHostDir)) {
-        Write-Host "Directory not found: $newHostDir" -ForegroundColor Red
-        exit 1
+        $message = "Directory not found: $newHostDir"
+        Write-Host $message -ForegroundColor Red
+        throw $message
     }
 
     $projectRulesPath = Join-Path $newHostDir "PROJECT_RULES.md"
@@ -177,7 +196,13 @@ if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
     
     Write-Host "`nContainer started successfully" -ForegroundColor Green
     Write-Host "Entering container..." -ForegroundColor Cyan
-    docker compose run --rm aider --config /config/.aider.conf.yml --model $selectedModel
+    docker compose run --rm aider --config /config/.aider.conf.yml --model "openrouter/$selectedModel"
 } else {
     Write-Host "Operation cancelled" -ForegroundColor Yellow
+}
+
+} finally {
+    if ($transcriptStarted) {
+        Stop-Transcript
+    }
 }
