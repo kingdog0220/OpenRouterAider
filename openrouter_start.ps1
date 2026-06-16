@@ -51,16 +51,26 @@ function Get-OpenRouterModels {
                 $_.architecture.output_modalities -and
                 ($_.architecture.output_modalities -contains "text")
             } |
-            Sort-Object @{Expression={($_.pricing.prompt -ne "0")}}, `
-                        @{Expression={([double]$_.pricing.prompt)+([double]$_.pricing.completion)}}, `
-                        @{Expression={$_.id}} |
             ForEach-Object {
-                $prompt = [double]$_.pricing.prompt * 1000000
-                $completion = [double]$_.pricing.completion * 1000000
+                $p = [double]$_.pricing.prompt
+                $c = [double]$_.pricing.completion
+                [PSCustomObject]@{
+                    Id = $_.id
+                    PromptPrice = $p
+                    CompletionPrice = $c
+                    TotalPrice = $p + $c
+                }
+            } |
+            Sort-Object @{Expression={ $_.TotalPrice -eq 0.0 }; Descending=$true}, `
+                        @{Expression={ $_.TotalPrice }}, `
+                        @{Expression={ $_.Id }} |
+            ForEach-Object {
+                $prompt = $_.PromptPrice * 1000000
+                $completion = $_.CompletionPrice * 1000000
 
                 [PSCustomObject]@{
-                    Display = "{0} [`${1}/`${2} per 1M]" -f $_.id, $prompt, $completion
-                    ModelId = $_.id
+                    Display = "{0} [`${1}/`${2} per 1M]" -f $_.Id, $prompt, $completion
+                    ModelId = $_.Id
                 }
             }
         )
