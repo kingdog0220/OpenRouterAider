@@ -36,7 +36,12 @@ function Get-OpenRouterModels {
         # Ensure response.data exists and is not null
         if ($null -eq $response -or $null -eq $response.data) {
             Write-Host "Invalid API response format" -ForegroundColor Yellow
-            return @("openrouter/free")  # Return default model
+            return @(
+                [PSCustomObject]@{
+                    Display = "openrouter/free"
+                    ModelId = "openrouter/free"
+                }
+            )
         }
         # Filter to models usable for inference (text output capable)
         $models = @(
@@ -46,19 +51,49 @@ function Get-OpenRouterModels {
                 $_.architecture.output_modalities -and
                 ($_.architecture.output_modalities -contains "text")
             } |
-            Sort-Object id |
-            ForEach-Object { $_.id }
+            ForEach-Object {
+                $p = [double]$_.pricing.prompt
+                $c = [double]$_.pricing.completion
+                [PSCustomObject]@{
+                    Id = $_.id
+                    PromptPrice = $p
+                    CompletionPrice = $c
+                    TotalPrice = $p + $c
+                }
+            } |
+            Sort-Object @{Expression={ $_.TotalPrice -eq 0.0 }; Descending=$true}, `
+                        @{Expression={ $_.TotalPrice }}, `
+                        @{Expression={ $_.Id }} |
+            ForEach-Object {
+                $prompt = $_.PromptPrice * 1000000
+                $completion = $_.CompletionPrice * 1000000
+
+                [PSCustomObject]@{
+                    Display = "{0} [`${1}/`${2} per 1M]" -f $_.Id, $prompt, $completion
+                    ModelId = $_.Id
+                }
+            }
         )
         # If no models found, return default
         if ($models.Count -eq 0) {
             Write-Host "No models found in API response" -ForegroundColor Yellow
-            return @("openrouter/free")
+            return @(
+                [PSCustomObject]@{
+                    Display = "openrouter/free"
+                    ModelId = "openrouter/free"
+                }
+            )
         }
         return $models
     }
     catch {
         Write-Host "Failed to fetch models from OpenRouter API: $_" -ForegroundColor Red
-        return @("openrouter/free")  # Default model if API fails
+        return @(
+            [PSCustomObject]@{
+                Display = "openrouter/free"
+                ModelId = "openrouter/free"
+            }
+        )
     }
 }
 
@@ -111,6 +146,19 @@ $modelLabel.Width = 100
 $form.Controls.Add($modelLabel)
 
 # ComboBox for Model selection
+# Get and prepare models list first
+$models = Get-OpenRouterModels
+# Ensure at least one model is available
+if ($models.Count -eq 0) {
+    $models = @([PSCustomObject]@{
+        Display = "openrouter/free"
+        ModelId = "openrouter/free"
+    })
+}
+
+# モデルリストを保存するスクリプトスコープ変数
+$script:modelsList = $models
+
 $modelComboBox = New-Object System.Windows.Forms.ComboBox
 $modelComboBox.Left = 20
 $modelComboBox.Top = 120
@@ -118,14 +166,11 @@ $modelComboBox.Width = 450
 $modelComboBox.DropDownStyle = [System.Windows.Forms.ComboBoxStyle]::DropDownList
 $form.Controls.Add($modelComboBox)
 
-# Populate models
-$models = Get-OpenRouterModels
-$modelComboBox.Items.AddRange($models)
-if ($models.Count -gt 0) {
-    $modelComboBox.SelectedIndex = 0
-} else {
-    # Add default model if no models available
-    $modelComboBox.Items.Add("openrouter/free")
+# 表示文字列のみをComboBoxに追加
+foreach ($model in $models) {
+    [void]$modelComboBox.Items.Add($model.Display)
+}
+if ($modelComboBox.Items.Count -gt 0) {
     $modelComboBox.SelectedIndex = 0
 }
 
@@ -154,7 +199,12 @@ $result = $form.ShowDialog()
 
 if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
     $newHostDir = $textbox.Text
-    $selectedModel = $modelComboBox.SelectedItem
+    $selectedIndex = $modelComboBox.SelectedIndex
+    if ($selectedIndex -ge 0 -and $selectedIndex -lt $script:modelsList.Count) {
+        $selectedModel = $script:modelsList[$selectedIndex].ModelId
+    } else {
+        $selectedModel = $null
+    }
 
     # Ensure selected model is not null
     if ($null -eq $selectedModel) {
