@@ -100,7 +100,7 @@ function Get-OpenRouterModels {
 # Show input dialog with current value as default
 $form = New-Object System.Windows.Forms.Form
 $form.Text = "OpenRouter Configuration"
-$form.Width = 500
+$form.Width = 900
 $form.Height = 240
 $form.StartPosition = "CenterScreen"
 $form.TopMost = $true
@@ -162,8 +162,12 @@ $script:modelsList = $models
 $modelComboBox = New-Object System.Windows.Forms.ComboBox
 $modelComboBox.Left = 20
 $modelComboBox.Top = 120
-$modelComboBox.Width = 450
+$modelComboBox.Width = 800
 $modelComboBox.DropDownStyle = [System.Windows.Forms.ComboBoxStyle]::DropDownList
+$modelComboBox.Font = New-Object System.Drawing.Font("Yu Gothic UI", 12)
+$modelComboBox.MaxDropDownItems = 20
+$modelComboBox.IntegralHeight = $false
+$modelComboBox.DropDownHeight = 300
 $form.Controls.Add($modelComboBox)
 
 # 表示文字列のみをComboBoxに追加
