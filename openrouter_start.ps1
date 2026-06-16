@@ -46,8 +46,18 @@ function Get-OpenRouterModels {
                 $_.architecture.output_modalities -and
                 ($_.architecture.output_modalities -contains "text")
             } |
-            Sort-Object id |
-            ForEach-Object { $_.id }
+            Sort-Object @{Expression={($_.pricing.prompt -ne "0")}}, `
+                        @{Expression={([double]$_.pricing.prompt)+([double]$_.pricing.completion)}}, `
+                        @{Expression={$_.id}} |
+            ForEach-Object {
+                $prompt = [double]$_.pricing.prompt * 1000000
+                $completion = [double]$_.pricing.completion * 1000000
+
+                [PSCustomObject]@{
+                    Display = "{0} [`${1}/`${2} per 1M]" -f $_.id, $prompt, $completion
+                    ModelId = $_.id
+                }
+            }
         )
         # If no models found, return default
         if ($models.Count -eq 0) {
@@ -116,6 +126,9 @@ $modelComboBox.Left = 20
 $modelComboBox.Top = 120
 $modelComboBox.Width = 450
 $modelComboBox.DropDownStyle = [System.Windows.Forms.ComboBoxStyle]::DropDownList
+$modelComboBox.DisplayMember = "Display"
+$modelComboBox.ValueMember = "ModelId"
+$modelComboBox.DataSource = $models
 $form.Controls.Add($modelComboBox)
 
 # Populate models
@@ -154,7 +167,7 @@ $result = $form.ShowDialog()
 
 if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
     $newHostDir = $textbox.Text
-    $selectedModel = $modelComboBox.SelectedItem
+    $selectedModel = $modelComboBox.SelectedItem.ModelId
 
     # Ensure selected model is not null
     if ($null -eq $selectedModel) {
