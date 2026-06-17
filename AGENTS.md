@@ -6,9 +6,12 @@
 
 ## Security
 
-- .env および .env.* ファイルの内容を参照してはいけない
-- APIキー、パスワード、トークンなどの認証情報を出力してはいけない
-- 秘密情報を含むファイルの内容を要約・転載してはいけない
+- .env および .env.* ファイルの内容を参照・出力してはいけない
+- APIキー、パスワード、トークンなどの認証情報を参照・出力してはいけない
+- その他秘密情報を含むファイルの内容を要約・出力してはいけない
+- ファイルの権限を更新してはいけない
+  - chmod
+  - git update-index --chmod
 
 ## Analysis
 
@@ -38,4 +41,4 @@
 ## Aditional Rule
 
 - PROJECT_RULES.md が存在する場合は、その内容を追加ルールとして適用する
-- AGENTS.md と PROJECT_RULES.md が競合する場合は PROJECT_RULES.md を優先する
+- AGENTS.md と PROJECT_RULES.md でルールが競合する場合は PROJECT_RULES.md を優先する
