@@ -5,6 +5,8 @@ cache-prompts: true
 stream: true
 auto-commits: false
 dirty-commits: false
+git-commit-verify: true
+commit-language: ja
 read:
   - /config/AGENTS.md
   - PROJECT_RULES.md
